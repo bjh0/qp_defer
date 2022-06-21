@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model version="5.1.0" links="1">
+<model version="5.1.4" links="1">
  <documentation>&quot;Deferred Event&quot; state pattern example
 
 NOTE: Requries QP6.</documentation>
@@ -7,178 +7,170 @@ NOTE: Requries QP6.</documentation>
  <framework name="qpc"/>
  <!--${Events}-->
  <package name="Events" stereotype="0x01">
-  <!--${Events::RequestEvt}-->
-  <class name="RequestEvt" superclass="qpc::QEvt">
-   <!--${Events::RequestEvt::ref_num}-->
-   <attribute name="ref_num" type="uint8_t" visibility="0x00" properties="0x00">
-    <documentation>reference number of the request</documentation>
-   </attribute>
+  <!--${Events::SampleEvt}-->
+  <class name="SampleEvt" superclass="qpc::QEvt">
+   <!--${Events::SampleEvt::prop1}-->
+   <attribute name="prop1" type="uint8_t" visibility="0x00" properties="0x00"/>
   </class>
+  <!--${Events::DeviceDetectEvt}-->
+  <class name="DeviceDetectEvt" superclass="qpc::QEvt"/>
+  <!--${Events::DeviceDetectedEvt}-->
+  <class name="DeviceDetectedEvt" superclass="qpc::QEvt"/>
+  <!--${Events::DeviceReadEvt}-->
+  <class name="DeviceReadEvt" superclass="qpc::QEvt"/>
+  <!--${Events::DeviceReadCompleteEvt}-->
+  <class name="DeviceReadCompleteEvt" superclass="qpc::QEvt"/>
+  <!--${Events::DeviceWriteEvt}-->
+  <class name="DeviceWriteEvt" superclass="qpc::QEvt"/>
+  <!--${Events::DeviceWriteCompleteEvt}-->
+  <class name="DeviceWriteCompleteEvt" superclass="qpc::QEvt"/>
  </package>
  <!--${Components}-->
  <package name="Components" stereotype="0x02">
-  <!--${Components::TServer}-->
-  <class name="TServer" superclass="qpc::QActive">
-   <documentation>&quot;Transaction Server&quot; AO</documentation>
-   <!--${Components::TServer::requestQueue}-->
-   <attribute name="requestQueue" type="QEQueue" visibility="0x02" properties="0x00"/>
-   <!--${Components::TServer::requestQSto[3]}-->
-   <attribute name="requestQSto[3]" type="QEvt const *" visibility="0x02" properties="0x00"/>
-   <!--${Components::TServer::activeRequest}-->
-   <attribute name="activeRequest" type="RequestEvt const *" visibility="0x00" properties="0x00"/>
-   <!--${Components::TServer::receivedEvt}-->
-   <attribute name="receivedEvt" type="QTimeEvt" visibility="0x00" properties="0x00">
-    <documentation>private time event</documentation>
-   </attribute>
-   <!--${Components::TServer::authorizedEvt}-->
-   <attribute name="authorizedEvt" type="QTimeEvt" visibility="0x00" properties="0x00">
-    <documentation>private time event</documentation>
-   </attribute>
-   <!--${Components::TServer::inst}-->
-   <attribute name="inst" type="TServer" visibility="0x00" properties="0x01"/>
-   <!--${Components::TServer::ctor}-->
+  <!--${Components::Comms}-->
+  <class name="Comms" superclass="qpc::QActive">
+   <documentation>/* Communications AO */</documentation>
+   <!--${Components::Comms::messageQueue}-->
+   <attribute name="messageQueue" type="QEQueue" visibility="0x02" properties="0x00"/>
+   <!--${Components::Comms::inst}-->
+   <attribute name="inst" type="Comms" visibility="0x00" properties="0x01"/>
+   <!--${Components::Comms::messageQueueSto[5]}-->
+   <attribute name="messageQueueSto[5]" type="QEvt const*" visibility="0x02" properties="0x00"/>
+   <!--${Components::Comms::ctor}-->
    <operation name="ctor" type="void" visibility="0x00" properties="0x00">
-    <code>QActive_ctor(&amp;me-&gt;super, Q_STATE_CAST(&amp;TServer_initial));
-QEQueue_init(&amp;me-&gt;requestQueue,
-              me-&gt;requestQSto, Q_DIM(me-&gt;requestQSto));
-QTimeEvt_ctorX(&amp;me-&gt;receivedEvt,   &amp;me-&gt;super, RECEIVED_SIG,   0U);
-QTimeEvt_ctorX(&amp;me-&gt;authorizedEvt, &amp;me-&gt;super, AUTHORIZED_SIG, 0U);</code>
+    <code>QActive_ctor(&amp;me-&gt;super, Q_STATE_CAST(&amp;Comms_initial));
+QEQueue_init(&amp;me-&gt;messageQueue,
+                  me-&gt;messageQueueSto, Q_DIM(me-&gt;messageQueueSto));</code>
    </operation>
-   <!--${Components::TServer::SM}-->
-   <statechart properties="0x03">
-    <!--${Components::TServer::SM::initial}-->
+   <!--${Components::Comms::SM}-->
+   <statechart properties="0x00">
+    <!--${Components::Comms::SM::initial}-->
     <initial target="../1">
-     <action>(void)par; /* unused parameter */
-me-&gt;activeRequest = (RequestEvt const *)0; /* no active request yet */
-
-
-QS_OBJ_DICTIONARY(&amp;TServer_inst);
-QS_OBJ_DICTIONARY(&amp;TServer_inst.receivedEvt);
-QS_OBJ_DICTIONARY(&amp;TServer_inst.authorizedEvt);
-QS_OBJ_DICTIONARY(&amp;TServer_inst.requestQueue);</action>
-     <initial_glyph conn="2,2,5,1,32,6,-2">
-      <action box="0,-2,6,2"/>
+     <initial_glyph conn="3,2,4,3,6,13">
+      <action box="0,-2,10,2"/>
      </initial_glyph>
     </initial>
-    <!--${Components::TServer::SM::idle}-->
+    <!--${Components::Comms::SM::idle}-->
     <state name="idle">
-     <entry brief="recall">PRINTF_S(&quot;%s\n&quot;, &quot;idle-ENTRY;&quot;);
+     <entry brief="recall">printf(&quot;comms-idle-ENTRY;\n&quot;);
 
 /* recall the oldest deferred request... */
-if (QActive_recall(&amp;me-&gt;super, &amp;me-&gt;requestQueue)) {
-    PRINTF_S(&quot;%s\n&quot;, &quot;Request recalled&quot;);
+if (QActive_recall(&amp;me-&gt;super, &amp;me-&gt;messageQueue)) 
+{
+    printf(&quot;%s\n&quot;, &quot;Request recalled&quot;);
 }
-else {
-    PRINTF_S(&quot;%s\n&quot;, &quot;No deferred requests&quot;);
+else 
+{
+    printf(&quot;%s\n&quot;, &quot;No deferred requests&quot;);
 }</entry>
-     <!--${Components::TServer::SM::idle::NEW_REQUEST}-->
-     <tran trig="NEW_REQUEST" target="../../2/2">
-      <action>/* create and save a new reference to the request event so that
-* this event will be available beyond this RTC step and won't be
-* recycled.
-*/
-Q_NEW_REF(me-&gt;activeRequest, RequestEvt);
-
-PRINTF_S(&quot;Processing request #%d\n&quot;,
-       (int)me-&gt;activeRequest-&gt;ref_num);</action>
-      <tran_glyph conn="2,18,3,1,56,32,-12">
-       <action box="0,-2,24,2"/>
+     <exit>printf(&quot;comms-idle-EXIT;\n&quot;);</exit>
+     <!--${Components::Comms::SM::idle::DEVICE_DETECT}-->
+     <tran trig="DEVICE_DETECT" target="../../2/3">
+      <tran_glyph conn="16,14,3,1,71,18,-25">
+       <action box="0,-2,15,2"/>
       </tran_glyph>
      </tran>
-     <!--${Components::TServer::SM::idle::TERMINATE}-->
-     <tran trig="TERMINATE" target="../../3">
-      <tran_glyph conn="2,22,3,1,62,68,-32">
-       <action box="0,-2,10,2"/>
+     <!--${Components::Comms::SM::idle::DEVICE_READ}-->
+     <tran trig="DEVICE_READ" target="../../2/4">
+      <tran_glyph conn="16,18,3,1,73,32,-27">
+       <action box="0,-2,13,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="2,6,30,20">
-      <entry box="1,2,13,2"/>
-     </state_glyph>
-    </state>
-    <!--${Components::TServer::SM::busy}-->
-    <state name="busy">
-     <exit>PRINTF_S(&quot;busy-EXIT; done processing request #%d\n&quot;,
-       (int)me-&gt;activeRequest-&gt;ref_num);
-
-/* delete the reference to the active request, because
-* it is now processed.
-*/
-Q_DELETE_REF(me-&gt;activeRequest);</exit>
-     <!--${Components::TServer::SM::busy::NEW_REQUEST}-->
-     <tran trig="NEW_REQUEST">
-      <action brief="defer">/* defer the new request event... */
-if (QActive_defer(&amp;me-&gt;super, &amp;me-&gt;requestQueue, e)) {
-    PRINTF_S(&quot;Request #%d deferred;\n&quot;,
-           (int)Q_EVT_CAST(RequestEvt)-&gt;ref_num);
-}
-else {
-    /* notify the request sender that his request was denied... */
-    PRINTF_S(&quot;Request #%d IGNORED;\n&quot;,
-           (int)Q_EVT_CAST(RequestEvt)-&gt;ref_num);
-}</action>
-      <tran_glyph conn="2,40,3,-1,26">
-       <action box="0,-2,24,2"/>
+     <!--${Components::Comms::SM::idle::DEVICE_WRITE}-->
+     <tran trig="DEVICE_WRITE" target="../../2/5">
+      <tran_glyph conn="16,22,3,1,75,50,-29">
+       <action box="0,-2,15,2"/>
       </tran_glyph>
      </tran>
-     <!--${Components::TServer::SM::busy::TERMINATE}-->
-     <tran trig="TERMINATE" target="../../3">
-      <tran_glyph conn="2,44,3,1,60,48,-30">
-       <action box="0,-2,10,2"/>
-      </tran_glyph>
-     </tran>
-     <!--${Components::TServer::SM::busy::receiving}-->
-     <state name="receiving">
-      <entry>/* inform about the first stage of processing of the request... */
-PRINTF_S(&quot;receiving-ENTRY; active request: #%d\n&quot;,
-       (int)me-&gt;activeRequest-&gt;ref_num);
-
-/* one-shot timeout in 1 second */
-QTimeEvt_armX(&amp;me-&gt;receivedEvt, BSP_TICKS_PER_SEC, 0U);</entry>
-      <exit>QTimeEvt_disarm(&amp;me-&gt;receivedEvt);</exit>
-      <!--${Components::TServer::SM::busy::receiving::RECEIVED}-->
-      <tran trig="RECEIVED" target="../../3">
-       <tran_glyph conn="6,58,3,1,44,10,-4">
-        <action box="0,-2,8,2"/>
-       </tran_glyph>
-      </tran>
-      <state_glyph node="6,48,40,14">
-       <entry box="1,2,27,2"/>
-       <exit box="1,4,6,2"/>
-      </state_glyph>
-     </state>
-     <!--${Components::TServer::SM::busy::authorizing}-->
-     <state name="authorizing">
-      <entry>/* inform about the second stage of processing of the request.. */
-PRINTF_S(&quot;authorizing-ENTRY; active request: #%d\n&quot;,
-       (int)me-&gt;activeRequest-&gt;ref_num);
-
-/* one-shot timeout in 2 seconds */
-QTimeEvt_armX(&amp;me-&gt;authorizedEvt, 2U*BSP_TICKS_PER_SEC, 0U);</entry>
-      <exit>QTimeEvt_disarm(&amp;me-&gt;authorizedEvt);</exit>
-      <!--${Components::TServer::SM::busy::authorizing::AUTHORIZED}-->
-      <tran trig="AUTHORIZED" target="../../../1">
-       <tran_glyph conn="6,76,3,1,54,-62,-28">
-        <action box="0,-2,14,2"/>
-       </tran_glyph>
-      </tran>
-      <state_glyph node="6,66,40,14">
-       <entry box="1,2,17,2"/>
-       <exit box="1,4,6,2"/>
-      </state_glyph>
-     </state>
-     <state_glyph node="2,30,54,54">
-      <exit box="1,2,6,2"/>
-     </state_glyph>
-    </state>
-    <!--${Components::TServer::SM::final}-->
-    <state name="final">
-     <entry brief="stop">PRINTF_S(&quot;%s\n&quot;, &quot;final-ENTRY;&quot;);
-            QF_stop(); /* terminate the application */</entry>
-     <state_glyph node="2,88,30,10">
+     <state_glyph node="16,6,19,18">
       <entry box="1,2,6,2"/>
+      <exit box="1,4,6,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="68,102"/>
+    <!--${Components::Comms::SM::busy}-->
+    <state name="busy">
+     <entry>printf(&quot;comms-busy-ENTRY;\n&quot;);</entry>
+     <exit>printf(&quot;comms-busy-EXIT;\n&quot;);</exit>
+     <!--${Components::Comms::SM::busy::DEVICE_DETECT}-->
+     <tran trig="DEVICE_DETECT">
+      <action brief="defer">/* defer the new device detect event... */
+QActive_defer(&amp;me-&gt;super, &amp;me-&gt;messageQueue, e);
+printf(&quot;Device detect deferred;\n&quot;);
+
+</action>
+      <tran_glyph conn="16,98,3,-1,28">
+       <action box="0,-2,24,2"/>
+      </tran_glyph>
+     </tran>
+     <!--${Components::Comms::SM::busy::DEVICE_READ}-->
+     <tran trig="DEVICE_READ">
+      <action brief="defer">/* defer the new device read event... */
+QActive_defer(&amp;me-&gt;super, &amp;me-&gt;messageQueue, e); 
+printf(&quot;Device read deferred;\n&quot;);</action>
+      <tran_glyph conn="16,100,3,-1,28">
+       <action box="0,-2,19,2"/>
+      </tran_glyph>
+     </tran>
+     <!--${Components::Comms::SM::busy::DEVICE_WRITE}-->
+     <tran trig="DEVICE_WRITE">
+      <action brief="defer">/* defer the new device write event... */
+QActive_defer(&amp;me-&gt;super, &amp;me-&gt;messageQueue, e);
+printf(&quot;Device write deferred;\n&quot;);</action>
+      <tran_glyph conn="16,102,3,-1,28">
+       <action box="0,-2,19,3"/>
+      </tran_glyph>
+     </tran>
+     <!--${Components::Comms::SM::busy::detecting}-->
+     <state name="detecting">
+      <entry>printf(&quot;comms-detecting-ENTRY;\n&quot;);</entry>
+      <exit>printf(&quot;comms-detecting-EXIT;\n&quot;);</exit>
+      <!--${Components::Comms::SM::busy::detecting::DEVICE_DETECTED}-->
+      <tran trig="DEVICE_DETECTED" target="../../../1">
+       <tran_glyph conn="20,40,5,3,-6,-32,2">
+        <action box="0,-2,16,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="20,30,42,15">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,6,2"/>
+      </state_glyph>
+     </state>
+     <!--${Components::Comms::SM::busy::reading}-->
+     <state name="reading">
+      <entry>printf(&quot;comms-read-ENTRY;\n&quot;);</entry>
+      <exit>printf(&quot;comms-read-EXIT;\n&quot;);</exit>
+      <!--${Components::Comms::SM::busy::reading::DEVICE_READ_COMPLETE}-->
+      <tran trig="DEVICE_READ_COMPLETE" target="../../../1">
+       <tran_glyph conn="20,56,3,3,-6,-48,2">
+        <action box="0,-2,22,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="20,48,42,18">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,6,2"/>
+      </state_glyph>
+     </state>
+     <!--${Components::Comms::SM::busy::writing}-->
+     <state name="writing">
+      <entry>printf(&quot;comms-write-ENTRY;\n&quot;);</entry>
+      <exit>printf(&quot;comms-write-EXIT;\n&quot;);</exit>
+      <!--${Components::Comms::SM::busy::writing::DEVICE_WRITE_COMPLETE}-->
+      <tran trig="DEVICE_WRITE_COMPLETE" target="../../../1">
+       <tran_glyph conn="20,78,3,3,-6,-70,2">
+        <action box="0,-2,28,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="20,70,42,23">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,6,2"/>
+      </state_glyph>
+     </state>
+     <state_glyph node="16,26,70,92">
+      <entry box="1,2,6,2"/>
+      <exit box="1,4,6,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="104,123"/>
    </statechart>
   </class>
  </package>
@@ -195,30 +187,46 @@ Q_DEFINE_THIS_FILE
 
 /*..........................................................................*/
 enum TServerSignals {
-    NEW_REQUEST_SIG = Q_USER_SIG, /* the new request signal */
-    RECEIVED_SIG,                 /* the request has been received */
-    AUTHORIZED_SIG,               /* the request has been authorized */
-    TERMINATE_SIG                 /* terminate the application */
+    HELLO_WORLD_SIG = Q_USER_SIG, 
+    DEVICE_DETECT_SIG,
+    DEVICE_DETECTED_SIG,
+    DEVICE_READ_SIG,
+    DEVICE_READ_COMPLETE_SIG,
+    DEVICE_WRITE_SIG,
+    DEVICE_WRITE_COMPLETE_SIG,
+    TERMINATE_SIG,                /* terminate the application */
 };
 /*..........................................................................*/
-$declare${Events::RequestEvt}
+$declare${Events::SampleEvt}    // this was just used to size an event pool
+$declare${Events::DeviceDetectEvt}
+$declare${Events::DeviceDetectedEvt}
+$declare${Events::DeviceReadEvt}
+$declare${Events::DeviceReadCompleteEvt}
+$declare${Events::DeviceWriteEvt}
+$declare${Events::DeviceWriteCompleteEvt}
 
 /* Active object class -----------------------------------------------------*/
-$declare${Components::TServer}
+$declare${Components::Comms}
 
-$define${Components::TServer}
+$define${Components::Comms}
+
 
 // test harness ============================================================*/
 
 // Local-scope objects -------------------------------------------------------
 static QEvt const *l_tserverQSto[10]; /* Event queue storage for TServer */
-static QF_MPOOL_EL(RequestEvt) l_smlPoolSto[20]; /* storage for small pool */
+static QEvt const *l_commsQSto[10]; /* Event queue storage for Comms */
+static QF_MPOOL_EL(SampleEvt) l_smlPoolSto[50]; /* storage for small pool */
 
 /*..........................................................................*/
 int main(int argc, char *argv[]) {
     PRINTF_S(&quot;Deferred Event state pattern\nQP version: %s\n&quot;
-           &quot;Press 'n' to generate a new request\n&quot;
-           &quot;Press ESC to quit...\n&quot;,
+            &quot;Press 'd' to generate a new device detect request\n&quot;
+            &quot;Press 'D' to generate a new device detect complete event\n&quot;
+            &quot;Press 'r' to generate a new device read request\n&quot;
+            &quot;Press 'R' to generate a new device read complete event\n&quot;
+            &quot;Press 'w' to generate a new device write request\n&quot;
+            &quot;Press 'W' to generate a new device write complete event\n\n\n&quot;,
            QP_VERSION_STR);
 
     QF_init(); /* initialize the framework and the underlying RTOS/OS */
@@ -230,34 +238,68 @@ int main(int argc, char *argv[]) {
     /* initialize event pools... */
     QF_poolInit(l_smlPoolSto, sizeof(l_smlPoolSto), sizeof(l_smlPoolSto[0]));
 
-    QS_SIG_DICTIONARY(NEW_REQUEST_SIG, (void *)0); /* global signals */
-    QS_SIG_DICTIONARY(RECEIVED_SIG,    (void *)0);
-    QS_SIG_DICTIONARY(AUTHORIZED_SIG,  (void *)0);
     QS_SIG_DICTIONARY(TERMINATE_SIG,   (void *)0);
 
     /* start the active objects... */
-    TServer_ctor(&amp;TServer_inst);
-    QACTIVE_START((QActive *)&amp;TServer_inst,
-                  1U,
-                  l_tserverQSto, Q_DIM(l_tserverQSto),
+    Comms_ctor(&amp;Comms_inst);
+    QACTIVE_START((QActive *)&amp;Comms_inst,
+                  2U,
+                  l_commsQSto, Q_DIM(l_commsQSto),
                   (void *)0, 0U, (void *)0);
 
     return QF_run(); /* run the QF application */
 }
 /*..........................................................................*/
-void BSP_onKeyboardInput(uint8_t key) {
-    switch (key) {
-        case 'n': {  /* 'n': new request? */
-            static uint8_t reqCtr = 0; /* count the requests */
-            RequestEvt *e = Q_NEW(RequestEvt, NEW_REQUEST_SIG);
-            e-&gt;ref_num = (++reqCtr); /* set the reference number */
-            /* post directly to TServer active object */
-            QACTIVE_POST((QActive *)&amp;TServer_inst, (QEvt *)e, (void *)0);
+void BSP_onKeyboardInput(uint8_t key) 
+{
+    switch (key) 
+    {
+        case '\33': 
+        { /* ESC pressed? */
+            static QEvt const terminateEvt = { TERMINATE_SIG, 0U, 0U };
+            QACTIVE_POST((QActive *)&amp;Comms_inst, &amp;terminateEvt, (void *)0);
             break;
         }
-        case '\33': { /* ESC pressed? */
-            static QEvt const terminateEvt = { TERMINATE_SIG, 0U, 0U };
-            QACTIVE_POST((QActive *)&amp;TServer_inst, &amp;terminateEvt, (void *)0);
+        case 'd':
+        {    /* 'd': device detect request */
+            DeviceDetectEvt *e = Q_NEW(DeviceDetectEvt, DEVICE_DETECT_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&amp;Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'D':
+        {    /* 'D': device detected */
+            DeviceDetectedEvt *e = Q_NEW(DeviceDetectedEvt, DEVICE_DETECTED_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&amp;Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'r':
+        {    /* 'r': device read request */
+            DeviceReadEvt *e = Q_NEW(DeviceReadEvt, DEVICE_READ_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&amp;Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'R':
+        {    /* 'R': device read completed */
+            DeviceReadCompleteEvt *e = Q_NEW(DeviceReadCompleteEvt, DEVICE_READ_COMPLETE_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&amp;Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'w':
+        {    /* 'w': device write request */
+            DeviceWriteEvt *e = Q_NEW(DeviceWriteEvt, DEVICE_WRITE_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&amp;Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'W':
+        {    /* 'W': device write completed */
+            DeviceWriteCompleteEvt *e = Q_NEW(DeviceWriteCompleteEvt, DEVICE_WRITE_COMPLETE_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&amp;Comms_inst, (QEvt *)e, (void *)0);
             break;
         }
     }

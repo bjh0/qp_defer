@@ -25,52 +25,99 @@ Q_DEFINE_THIS_FILE
 
 /*..........................................................................*/
 enum TServerSignals {
-    NEW_REQUEST_SIG = Q_USER_SIG, /* the new request signal */
-    RECEIVED_SIG,                 /* the request has been received */
-    AUTHORIZED_SIG,               /* the request has been authorized */
-    TERMINATE_SIG                 /* terminate the application */
+    HELLO_WORLD_SIG = Q_USER_SIG,
+    DEVICE_DETECT_SIG,
+    DEVICE_DETECTED_SIG,
+    DEVICE_READ_SIG,
+    DEVICE_READ_COMPLETE_SIG,
+    DEVICE_WRITE_SIG,
+    DEVICE_WRITE_COMPLETE_SIG,
+    TERMINATE_SIG,                /* terminate the application */
 };
 /*..........................................................................*/
-/*.$declare${Events::RequestEvt} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
-/*.${Events::RequestEvt} ...................................................*/
+/*.$declare${Events::SampleEvt} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+/*.${Events::SampleEvt} ....................................................*/
 typedef struct {
 /* protected: */
     QEvt super;
 
 /* public: */
-    uint8_t ref_num;
-} RequestEvt;
-/*.$enddecl${Events::RequestEvt} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+    uint8_t prop1;
+} SampleEvt;
+/*.$enddecl${Events::SampleEvt} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+    // this was just used to size an event pool/*.$declare${Events::DeviceDetectEvt} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+/*.${Events::DeviceDetectEvt} ..............................................*/
+typedef struct {
+/* protected: */
+    QEvt super;
+} DeviceDetectEvt;
+/*.$enddecl${Events::DeviceDetectEvt} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+/*.$declare${Events::DeviceDetectedEvt} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+/*.${Events::DeviceDetectedEvt} ............................................*/
+typedef struct {
+/* protected: */
+    QEvt super;
+} DeviceDetectedEvt;
+/*.$enddecl${Events::DeviceDetectedEvt} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+/*.$declare${Events::DeviceReadEvt} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+/*.${Events::DeviceReadEvt} ................................................*/
+typedef struct {
+/* protected: */
+    QEvt super;
+} DeviceReadEvt;
+/*.$enddecl${Events::DeviceReadEvt} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+/*.$declare${Events::DeviceReadCompleteEvt} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+/*.${Events::DeviceReadCompleteEvt} ........................................*/
+typedef struct {
+/* protected: */
+    QEvt super;
+} DeviceReadCompleteEvt;
+/*.$enddecl${Events::DeviceReadCompleteEvt} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+/*.$declare${Events::DeviceWriteEvt} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+/*.${Events::DeviceWriteEvt} ...............................................*/
+typedef struct {
+/* protected: */
+    QEvt super;
+} DeviceWriteEvt;
+/*.$enddecl${Events::DeviceWriteEvt} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+/*.$declare${Events::DeviceWriteCompleteEvt} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+/*.${Events::DeviceWriteCompleteEvt} .......................................*/
+typedef struct {
+/* protected: */
+    QEvt super;
+} DeviceWriteCompleteEvt;
+/*.$enddecl${Events::DeviceWriteCompleteEvt} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
 
 /* Active object class -----------------------------------------------------*/
-/*.$declare${Components::TServer} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
-/*.${Components::TServer} ..................................................*/
-typedef struct TServer {
+/*.$declare${Components::Comms} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+
+/* Communications AO */
+/*.${Components::Comms} ....................................................*/
+typedef struct Comms {
 /* protected: */
     QActive super;
 
 /* private: */
-    QEQueue requestQueue;
-    QEvt const * requestQSto[3];
+    QEQueue messageQueue;
 
 /* public: */
-    RequestEvt const * activeRequest;
-    QTimeEvt receivedEvt;
-    QTimeEvt authorizedEvt;
-} TServer;
+
+/* private: */
+    QEvt const* messageQueueSto[5];
+} Comms;
 
 /* public: */
-static void TServer_ctor(TServer * const me);
-extern TServer TServer_inst;
+static void Comms_ctor(Comms * const me);
+extern Comms Comms_inst;
 
 /* protected: */
-static QState TServer_initial(TServer * const me, void const * const par);
-static QState TServer_idle(TServer * const me, QEvt const * const e);
-static QState TServer_busy(TServer * const me, QEvt const * const e);
-static QState TServer_receiving(TServer * const me, QEvt const * const e);
-static QState TServer_authorizing(TServer * const me, QEvt const * const e);
-static QState TServer_final(TServer * const me, QEvt const * const e);
-/*.$enddecl${Components::TServer} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+static QState Comms_initial(Comms * const me, void const * const par);
+static QState Comms_idle(Comms * const me, QEvt const * const e);
+static QState Comms_busy(Comms * const me, QEvt const * const e);
+static QState Comms_detecting(Comms * const me, QEvt const * const e);
+static QState Comms_reading(Comms * const me, QEvt const * const e);
+static QState Comms_writing(Comms * const me, QEvt const * const e);
+/*.$enddecl${Components::Comms} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
 
 /*.$skip${QP_VERSION} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
 /*. Check for the minimum required QP version */
@@ -78,72 +125,62 @@ static QState TServer_final(TServer * const me, QEvt const * const e);
 #error qpc version 6.9.0 or higher required
 #endif
 /*.$endskip${QP_VERSION} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
-/*.$define${Components::TServer} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
-/*.${Components::TServer} ..................................................*/
-TServer TServer_inst;
-/*.${Components::TServer::ctor} ............................................*/
-static void TServer_ctor(TServer * const me) {
-    QActive_ctor(&me->super, Q_STATE_CAST(&TServer_initial));
-    QEQueue_init(&me->requestQueue,
-                  me->requestQSto, Q_DIM(me->requestQSto));
-    QTimeEvt_ctorX(&me->receivedEvt,   &me->super, RECEIVED_SIG,   0U);
-    QTimeEvt_ctorX(&me->authorizedEvt, &me->super, AUTHORIZED_SIG, 0U);
+/*.$define${Components::Comms} vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv*/
+
+/* Communications AO */
+/*.${Components::Comms} ....................................................*/
+Comms Comms_inst;
+/*.${Components::Comms::ctor} ..............................................*/
+static void Comms_ctor(Comms * const me) {
+    QActive_ctor(&me->super, Q_STATE_CAST(&Comms_initial));
+    QEQueue_init(&me->messageQueue,
+                      me->messageQueueSto, Q_DIM(me->messageQueueSto));
 }
 
-/*.${Components::TServer::SM} ..............................................*/
-static QState TServer_initial(TServer * const me, void const * const par) {
-    /*.${Components::TServer::SM::initial} */
-    (void)par; /* unused parameter */
-    me->activeRequest = (RequestEvt const *)0; /* no active request yet */
-
-
-    QS_OBJ_DICTIONARY(&TServer_inst);
-    QS_OBJ_DICTIONARY(&TServer_inst.receivedEvt);
-    QS_OBJ_DICTIONARY(&TServer_inst.authorizedEvt);
-    QS_OBJ_DICTIONARY(&TServer_inst.requestQueue);
-
-    QS_FUN_DICTIONARY(&TServer_idle);
-    QS_FUN_DICTIONARY(&TServer_busy);
-    QS_FUN_DICTIONARY(&TServer_receiving);
-    QS_FUN_DICTIONARY(&TServer_authorizing);
-    QS_FUN_DICTIONARY(&TServer_final);
-
-    return Q_TRAN(&TServer_idle);
+/*.${Components::Comms::SM} ................................................*/
+static QState Comms_initial(Comms * const me, void const * const par) {
+    /*.${Components::Comms::SM::initial} */
+    return Q_TRAN(&Comms_idle);
 }
-/*.${Components::TServer::SM::idle} ........................................*/
-static QState TServer_idle(TServer * const me, QEvt const * const e) {
+/*.${Components::Comms::SM::idle} ..........................................*/
+static QState Comms_idle(Comms * const me, QEvt const * const e) {
     QState status_;
     switch (e->sig) {
-        /*.${Components::TServer::SM::idle} */
+        /*.${Components::Comms::SM::idle} */
         case Q_ENTRY_SIG: {
-            PRINTF_S("%s\n", "idle-ENTRY;");
+            printf("comms-idle-ENTRY;\n");
 
             /* recall the oldest deferred request... */
-            if (QActive_recall(&me->super, &me->requestQueue)) {
-                PRINTF_S("%s\n", "Request recalled");
+            if (QActive_recall(&me->super, &me->messageQueue))
+            {
+                printf("%s\n", "Request recalled");
             }
-            else {
-                PRINTF_S("%s\n", "No deferred requests");
+            else
+            {
+                printf("%s\n", "No deferred requests");
             }
             status_ = Q_HANDLED();
             break;
         }
-        /*.${Components::TServer::SM::idle::NEW_REQUEST} */
-        case NEW_REQUEST_SIG: {
-            /* create and save a new reference to the request event so that
-            * this event will be available beyond this RTC step and won't be
-            * recycled.
-            */
-            Q_NEW_REF(me->activeRequest, RequestEvt);
-
-            PRINTF_S("Processing request #%d\n",
-                   (int)me->activeRequest->ref_num);
-            status_ = Q_TRAN(&TServer_receiving);
+        /*.${Components::Comms::SM::idle} */
+        case Q_EXIT_SIG: {
+            printf("comms-idle-EXIT;\n");
+            status_ = Q_HANDLED();
             break;
         }
-        /*.${Components::TServer::SM::idle::TERMINATE} */
-        case TERMINATE_SIG: {
-            status_ = Q_TRAN(&TServer_final);
+        /*.${Components::Comms::SM::idle::DEVICE_DETECT} */
+        case DEVICE_DETECT_SIG: {
+            status_ = Q_TRAN(&Comms_detecting);
+            break;
+        }
+        /*.${Components::Comms::SM::idle::DEVICE_READ} */
+        case DEVICE_READ_SIG: {
+            status_ = Q_TRAN(&Comms_reading);
+            break;
+        }
+        /*.${Components::Comms::SM::idle::DEVICE_WRITE} */
+        case DEVICE_WRITE_SIG: {
+            status_ = Q_TRAN(&Comms_writing);
             break;
         }
         default: {
@@ -153,123 +190,45 @@ static QState TServer_idle(TServer * const me, QEvt const * const e) {
     }
     return status_;
 }
-/*.${Components::TServer::SM::busy} ........................................*/
-static QState TServer_busy(TServer * const me, QEvt const * const e) {
+/*.${Components::Comms::SM::busy} ..........................................*/
+static QState Comms_busy(Comms * const me, QEvt const * const e) {
     QState status_;
     switch (e->sig) {
-        /*.${Components::TServer::SM::busy} */
-        case Q_EXIT_SIG: {
-            PRINTF_S("busy-EXIT; done processing request #%d\n",
-                   (int)me->activeRequest->ref_num);
-
-            /* delete the reference to the active request, because
-            * it is now processed.
-            */
-            Q_DELETE_REF(me->activeRequest);
-            status_ = Q_HANDLED();
-            break;
-        }
-        /*.${Components::TServer::SM::busy::NEW_REQUEST} */
-        case NEW_REQUEST_SIG: {
-            /* defer the new request event... */
-            if (QActive_defer(&me->super, &me->requestQueue, e)) {
-                PRINTF_S("Request #%d deferred;\n",
-                       (int)Q_EVT_CAST(RequestEvt)->ref_num);
-            }
-            else {
-                /* notify the request sender that his request was denied... */
-                PRINTF_S("Request #%d IGNORED;\n",
-                       (int)Q_EVT_CAST(RequestEvt)->ref_num);
-            }
-            status_ = Q_HANDLED();
-            break;
-        }
-        /*.${Components::TServer::SM::busy::TERMINATE} */
-        case TERMINATE_SIG: {
-            status_ = Q_TRAN(&TServer_final);
-            break;
-        }
-        default: {
-            status_ = Q_SUPER(&QHsm_top);
-            break;
-        }
-    }
-    return status_;
-}
-/*.${Components::TServer::SM::busy::receiving} .............................*/
-static QState TServer_receiving(TServer * const me, QEvt const * const e) {
-    QState status_;
-    switch (e->sig) {
-        /*.${Components::TServer::SM::busy::receiving} */
+        /*.${Components::Comms::SM::busy} */
         case Q_ENTRY_SIG: {
-            /* inform about the first stage of processing of the request... */
-            PRINTF_S("receiving-ENTRY; active request: #%d\n",
-                   (int)me->activeRequest->ref_num);
-
-            /* one-shot timeout in 1 second */
-            QTimeEvt_armX(&me->receivedEvt, BSP_TICKS_PER_SEC, 0U);
+            printf("comms-busy-ENTRY;\n");
             status_ = Q_HANDLED();
             break;
         }
-        /*.${Components::TServer::SM::busy::receiving} */
+        /*.${Components::Comms::SM::busy} */
         case Q_EXIT_SIG: {
-            QTimeEvt_disarm(&me->receivedEvt);
+            printf("comms-busy-EXIT;\n");
             status_ = Q_HANDLED();
             break;
         }
-        /*.${Components::TServer::SM::busy::receiving::RECEIVED} */
-        case RECEIVED_SIG: {
-            status_ = Q_TRAN(&TServer_authorizing);
-            break;
-        }
-        default: {
-            status_ = Q_SUPER(&TServer_busy);
-            break;
-        }
-    }
-    return status_;
-}
-/*.${Components::TServer::SM::busy::authorizing} ...........................*/
-static QState TServer_authorizing(TServer * const me, QEvt const * const e) {
-    QState status_;
-    switch (e->sig) {
-        /*.${Components::TServer::SM::busy::authorizing} */
-        case Q_ENTRY_SIG: {
-            /* inform about the second stage of processing of the request.. */
-            PRINTF_S("authorizing-ENTRY; active request: #%d\n",
-                   (int)me->activeRequest->ref_num);
+        /*.${Components::Comms::SM::busy::DEVICE_DETECT} */
+        case DEVICE_DETECT_SIG: {
+            /* defer the new device detect event... */
+            QActive_defer(&me->super, &me->messageQueue, e);
+            printf("Device detect deferred;\n");
 
-            /* one-shot timeout in 2 seconds */
-            QTimeEvt_armX(&me->authorizedEvt, 2U*BSP_TICKS_PER_SEC, 0U);
+
             status_ = Q_HANDLED();
             break;
         }
-        /*.${Components::TServer::SM::busy::authorizing} */
-        case Q_EXIT_SIG: {
-            QTimeEvt_disarm(&me->authorizedEvt);
+        /*.${Components::Comms::SM::busy::DEVICE_READ} */
+        case DEVICE_READ_SIG: {
+            /* defer the new device read event... */
+            QActive_defer(&me->super, &me->messageQueue, e);
+            printf("Device read deferred;\n");
             status_ = Q_HANDLED();
             break;
         }
-        /*.${Components::TServer::SM::busy::authorizing::AUTHORIZED} */
-        case AUTHORIZED_SIG: {
-            status_ = Q_TRAN(&TServer_idle);
-            break;
-        }
-        default: {
-            status_ = Q_SUPER(&TServer_busy);
-            break;
-        }
-    }
-    return status_;
-}
-/*.${Components::TServer::SM::final} .......................................*/
-static QState TServer_final(TServer * const me, QEvt const * const e) {
-    QState status_;
-    switch (e->sig) {
-        /*.${Components::TServer::SM::final} */
-        case Q_ENTRY_SIG: {
-            PRINTF_S("%s\n", "final-ENTRY;");
-                        QF_stop(); /* terminate the application */
+        /*.${Components::Comms::SM::busy::DEVICE_WRITE} */
+        case DEVICE_WRITE_SIG: {
+            /* defer the new device write event... */
+            QActive_defer(&me->super, &me->messageQueue, e);
+            printf("Device write deferred;\n");
             status_ = Q_HANDLED();
             break;
         }
@@ -280,19 +239,109 @@ static QState TServer_final(TServer * const me, QEvt const * const e) {
     }
     return status_;
 }
-/*.$enddef${Components::TServer} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+/*.${Components::Comms::SM::busy::detecting} ...............................*/
+static QState Comms_detecting(Comms * const me, QEvt const * const e) {
+    QState status_;
+    switch (e->sig) {
+        /*.${Components::Comms::SM::busy::detecting} */
+        case Q_ENTRY_SIG: {
+            printf("comms-detecting-ENTRY;\n");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /*.${Components::Comms::SM::busy::detecting} */
+        case Q_EXIT_SIG: {
+            printf("comms-detecting-EXIT;\n");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /*.${Components::Comms::SM::busy::detecting::DEVICE_DETECTED} */
+        case DEVICE_DETECTED_SIG: {
+            status_ = Q_TRAN(&Comms_idle);
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&Comms_busy);
+            break;
+        }
+    }
+    return status_;
+}
+/*.${Components::Comms::SM::busy::reading} .................................*/
+static QState Comms_reading(Comms * const me, QEvt const * const e) {
+    QState status_;
+    switch (e->sig) {
+        /*.${Components::Comms::SM::busy::reading} */
+        case Q_ENTRY_SIG: {
+            printf("comms-read-ENTRY;\n");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /*.${Components::Comms::SM::busy::reading} */
+        case Q_EXIT_SIG: {
+            printf("comms-read-EXIT;\n");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /*.${Components::Comms::SM::busy::reading::DEVICE_READ_COMPLETE} */
+        case DEVICE_READ_COMPLETE_SIG: {
+            status_ = Q_TRAN(&Comms_idle);
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&Comms_busy);
+            break;
+        }
+    }
+    return status_;
+}
+/*.${Components::Comms::SM::busy::writing} .................................*/
+static QState Comms_writing(Comms * const me, QEvt const * const e) {
+    QState status_;
+    switch (e->sig) {
+        /*.${Components::Comms::SM::busy::writing} */
+        case Q_ENTRY_SIG: {
+            printf("comms-write-ENTRY;\n");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /*.${Components::Comms::SM::busy::writing} */
+        case Q_EXIT_SIG: {
+            printf("comms-write-EXIT;\n");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /*.${Components::Comms::SM::busy::writing::DEVICE_WRITE_COMPLETE} */
+        case DEVICE_WRITE_COMPLETE_SIG: {
+            status_ = Q_TRAN(&Comms_idle);
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&Comms_busy);
+            break;
+        }
+    }
+    return status_;
+}
+/*.$enddef${Components::Comms} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
+
 
 // test harness ============================================================*/
 
 // Local-scope objects -------------------------------------------------------
 static QEvt const *l_tserverQSto[10]; /* Event queue storage for TServer */
-static QF_MPOOL_EL(RequestEvt) l_smlPoolSto[20]; /* storage for small pool */
+static QEvt const *l_commsQSto[10]; /* Event queue storage for Comms */
+static QF_MPOOL_EL(SampleEvt) l_smlPoolSto[50]; /* storage for small pool */
 
 /*..........................................................................*/
 int main(int argc, char *argv[]) {
     PRINTF_S("Deferred Event state pattern\nQP version: %s\n"
-           "Press 'n' to generate a new request\n"
-           "Press ESC to quit...\n",
+            "Press 'd' to generate a new device detect request\n"
+            "Press 'D' to generate a new device detect complete event\n"
+            "Press 'r' to generate a new device read request\n"
+            "Press 'R' to generate a new device read complete event\n"
+            "Press 'w' to generate a new device write request\n"
+            "Press 'W' to generate a new device write complete event\n\n\n",
            QP_VERSION_STR);
 
     QF_init(); /* initialize the framework and the underlying RTOS/OS */
@@ -304,34 +353,68 @@ int main(int argc, char *argv[]) {
     /* initialize event pools... */
     QF_poolInit(l_smlPoolSto, sizeof(l_smlPoolSto), sizeof(l_smlPoolSto[0]));
 
-    QS_SIG_DICTIONARY(NEW_REQUEST_SIG, (void *)0); /* global signals */
-    QS_SIG_DICTIONARY(RECEIVED_SIG,    (void *)0);
-    QS_SIG_DICTIONARY(AUTHORIZED_SIG,  (void *)0);
     QS_SIG_DICTIONARY(TERMINATE_SIG,   (void *)0);
 
     /* start the active objects... */
-    TServer_ctor(&TServer_inst);
-    QACTIVE_START((QActive *)&TServer_inst,
-                  1U,
-                  l_tserverQSto, Q_DIM(l_tserverQSto),
+    Comms_ctor(&Comms_inst);
+    QACTIVE_START((QActive *)&Comms_inst,
+                  2U,
+                  l_commsQSto, Q_DIM(l_commsQSto),
                   (void *)0, 0U, (void *)0);
 
     return QF_run(); /* run the QF application */
 }
 /*..........................................................................*/
-void BSP_onKeyboardInput(uint8_t key) {
-    switch (key) {
-        case 'n': {  /* 'n': new request? */
-            static uint8_t reqCtr = 0; /* count the requests */
-            RequestEvt *e = Q_NEW(RequestEvt, NEW_REQUEST_SIG);
-            e->ref_num = (++reqCtr); /* set the reference number */
-            /* post directly to TServer active object */
-            QACTIVE_POST((QActive *)&TServer_inst, (QEvt *)e, (void *)0);
+void BSP_onKeyboardInput(uint8_t key)
+{
+    switch (key)
+    {
+        case '\33':
+        { /* ESC pressed? */
+            static QEvt const terminateEvt = { TERMINATE_SIG, 0U, 0U };
+            QACTIVE_POST((QActive *)&Comms_inst, &terminateEvt, (void *)0);
             break;
         }
-        case '\33': { /* ESC pressed? */
-            static QEvt const terminateEvt = { TERMINATE_SIG, 0U, 0U };
-            QACTIVE_POST((QActive *)&TServer_inst, &terminateEvt, (void *)0);
+        case 'd':
+        {    /* 'd': device detect request */
+            DeviceDetectEvt *e = Q_NEW(DeviceDetectEvt, DEVICE_DETECT_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'D':
+        {    /* 'D': device detected */
+            DeviceDetectedEvt *e = Q_NEW(DeviceDetectedEvt, DEVICE_DETECTED_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'r':
+        {    /* 'r': device read request */
+            DeviceReadEvt *e = Q_NEW(DeviceReadEvt, DEVICE_READ_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'R':
+        {    /* 'R': device read completed */
+            DeviceReadCompleteEvt *e = Q_NEW(DeviceReadCompleteEvt, DEVICE_READ_COMPLETE_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'w':
+        {    /* 'w': device write request */
+            DeviceWriteEvt *e = Q_NEW(DeviceWriteEvt, DEVICE_WRITE_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&Comms_inst, (QEvt *)e, (void *)0);
+            break;
+        }
+        case 'W':
+        {    /* 'W': device write completed */
+            DeviceWriteCompleteEvt *e = Q_NEW(DeviceWriteCompleteEvt, DEVICE_WRITE_COMPLETE_SIG);
+            /* post directly to comms active object */
+            QACTIVE_POST((QActive *)&Comms_inst, (QEvt *)e, (void *)0);
             break;
         }
     }
